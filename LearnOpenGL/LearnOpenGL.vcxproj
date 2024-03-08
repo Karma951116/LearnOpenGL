@@ -156,11 +156,28 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="camera.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="shader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="camera.h" />
     <ClInclude Include="data.h" />
+    <ClInclude Include="shader.h" />
+    <ClInclude Include="stb_image.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="textures\container_diffuse.png" />
+    <Image Include="textures\container_emission.jpg" />
+    <Image Include="textures\container_specular.png" />
+    <Image Include="textures\wood_container.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\shader_box.fs" />
+    <None Include="shaders\shader_box.vs" />
+    <None Include="shaders\shader_light.fs" />
+    <None Include="shaders\shader_light.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
