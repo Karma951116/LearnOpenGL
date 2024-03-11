@@ -1,6 +1,7 @@
 ﻿#include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <assimp/Base64.hpp>
 
 #include "data.h"
 #include "shader.h"
@@ -163,14 +164,13 @@ int main()
 #pragma region TextureLoad
 	unsigned int diffuseMap = loadTexture("textures/container_diffuse.png");
 	unsigned int specularMap = loadTexture("textures/container_specular.png");
-	unsigned int emissionMap = loadTexture("textures/container_emission.jpg");
+	/*unsigned int emissionMap = loadTexture("textures/container_emission.jpg");*/
 #pragma endregion
 	
-	glm::vec3 lightPos = glm::vec3(1.2f, 1.0f, 2.0f);
 	shaderBox.use();
 	shaderBox.setInt("material.diffuse", 0);
 	shaderBox.setInt("material.specular", 1);
-	shaderBox.setInt("material.emission", 2);
+	/*shaderBox.setInt("material.emission", 2);*/
 #pragma region RenderLoop
 	while (!glfwWindowShouldClose(window)) {
 		float currentFrame = glfwGetTime();
@@ -180,7 +180,7 @@ int main()
 
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		
+		// 光源
 		shaderLight.use();
 		glm::vec3 lightColor = glm::vec3(1.0f);
 		glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f); // 降低影响
@@ -189,36 +189,101 @@ int main()
 		glm::mat4 view = cam.getViewMat();
 		glm::mat4 project = glm::perspective(glm::radians(cam.getFovY()),
 			(float)1920 / (float)1080, 0.1f, 100.0f);
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, lightPos);
-		model = glm::scale(model, glm::vec3(0.2f));
 		shaderLight.setMat4("view", view);
 		shaderLight.setMat4("project", project);
-		shaderLight.setMat4("model", model);
+		glBindVertexArray(lightVao);
+		for (int i = 0; i < std::size(lightPositions); i++) {
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, lightPositions[i]);
+			model = glm::scale(model, glm::vec3(0.1f));
+			shaderLight.setMat4("model", model);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
+
+
+		// 被摄物体
+		shaderBox.use();
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, diffuseMap);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, specularMap);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, emissionMap);
-		glBindVertexArray(lightVao);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		//glActiveTexture(GL_TEXTURE2);
+		//glBindTexture(GL_TEXTURE_2D, emissionMap);
 
-		shaderBox.use();
 		shaderBox.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
 		shaderBox.setFloat("material.shininess", 32.0f);
-		shaderBox.setVec3("light.ambient", ambientColor);
-		shaderBox.setVec3("light.diffuse", diffuseColor);
-		shaderBox.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-		shaderBox.setVec3("light.position", lightPos);
+
+		shaderBox.setVec3("dLight.ambient", 0.01f, 0.01f, 0.01f);
+		shaderBox.setVec3("dLight.diffuse", 0.4f, 0.4f, 0.4f);
+		shaderBox.setVec3("dLight.specular", 0.5f, 0.5f, 0.5f);
+		shaderBox.setVec3("dLight.direction", -0.2f, -1.0f, -0.3f);
+
+		for (int i = 0; i < std::size(lightPositions); i++) {
+			std::string tgt = std::string("pLights[" + std::to_string(i) + "]");
+			shaderBox.setVec3(tgt +".position", lightPositions[i]);
+			shaderBox.setVec3(tgt + ".ambient", 0.05f, 0.05f, 0.05f);
+			shaderBox.setVec3(tgt + ".diffuse", 0.5f, 0.5f, 0.5f);
+			shaderBox.setVec3(tgt + ".specular", 1.0f, 1.0f, 1.0f);
+			shaderBox.setFloat(tgt + ".constant", 1.0f);
+			shaderBox.setFloat(tgt + ".linear", 0.045f);
+			shaderBox.setFloat(tgt + ".quadratic", 0.0075f);
+		}
+
+		//shaderBox.setVec3("pLights[0].position", lightPositions[0]);
+		//shaderBox.setVec3("pLights[0].ambient", 0.05f, 0.05f, 0.05f);
+		//shaderBox.setVec3("pLights[0].diffuse", 0.5f, 0.5f, 0.5f);
+		//shaderBox.setVec3("pLights[0].specular", 1.0f, 1.0f, 1.0f);
+		//shaderBox.setFloat("pLights[0].constant", 1.0f);
+		//shaderBox.setFloat("pLights[0].linear", 0.045f);
+		//shaderBox.setFloat("pLights[0].quadratic", 0.0075f);
+
+		/*shaderBox.setVec3("pLights[1].position", lightPositions[1]);
+		shaderBox.setVec3("pLights[1].ambient", 0.2f, 0.2f, 0.2f);
+		shaderBox.setVec3("pLights[1].diffuse", 0.5f, 0.5f, 0.5f);
+		shaderBox.setVec3("pLights[1].specular", 1.0f, 1.0f, 1.0f);
+		shaderBox.setFloat("pLights[1].constant", 1.0f);
+		shaderBox.setFloat("pLights[1].linear", 0.045f);
+		shaderBox.setFloat("pLights[1].quadratic", 0.0075f);
+
+		shaderBox.setVec3("pLights[2].position", lightPositions[2]);
+		shaderBox.setVec3("pLights[2].ambient", 0.2f, 0.2f, 0.2f);
+		shaderBox.setVec3("pLights[2].diffuse", 0.5f, 0.5f, 0.5f);
+		shaderBox.setVec3("pLights[2].specular", 1.0f, 1.0f, 1.0f);
+		shaderBox.setFloat("pLights[2].constant", 1.0f);
+		shaderBox.setFloat("pLights[2].linear", 0.045f);
+		shaderBox.setFloat("pLights[2].quadratic", 0.0075f);
+
+		shaderBox.setVec3("pLights[3].position", lightPositions[3]);
+		shaderBox.setVec3("pLights[3].ambient", 0.2f, 0.2f, 0.2f);
+		shaderBox.setVec3("pLights[3].diffuse", 0.2f, 0.2f, 0.2f);
+		shaderBox.setVec3("pLights[3].specular", 1.0f, 1.0f, 1.0f);
+		shaderBox.setFloat("pLights[3].constant", 1.0f);
+		shaderBox.setFloat("pLights[3].linear", 0.045f);
+		shaderBox.setFloat("pLights[3].quadratic", 0.0075f);*/
+		
+		shaderBox.setVec3("sLight.position", cam.getCamPos());
+		shaderBox.setVec3("sLight.direction", cam.getCamFront());
+		shaderBox.setVec3("sLight.ambient", 0.2f, 0.2f, 0.2f);
+		shaderBox.setVec3("sLight.diffuse", 0.5f, 0.5f, 0.5f);
+		shaderBox.setVec3("sLight.specular", 1.0f, 1.0f, 1.0f);
+		shaderBox.setFloat("sLight.cutoff", glm::cos(glm::radians(12.5f)));
+		shaderBox.setFloat("sLight.outerCutoff", glm::cos(glm::radians(17.5f)));
+		shaderBox.setFloat("sLight.constant", 1.0f);
+		shaderBox.setFloat("sLight.linear", 0.045f);
+		shaderBox.setFloat("sLight.quadratic", 0.0075f);
+
+
 		shaderBox.setVec3("viewPos", cam.getCamPos());
-		model = glm::mat4(1.0f);
 		shaderBox.setMat4("view", view);
 		shaderBox.setMat4("project", project);
-		shaderBox.setMat4("model", model);
 		glBindVertexArray(cubeVao);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
+		for (int i = 0; i < std::size(cubePositions); i++) {
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, cubePositions[i]);
+			model = glm::rotate(model, glm::radians(20.0f * i), glm::vec3(1.0f, 0.3f, 0.5f));
+			shaderBox.setMat4("model", model);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}

@@ -29,6 +29,7 @@ public:
 
 	glm::mat4 getViewMat();
 	glm::vec3 getCamPos();
+	glm::vec3 getCamFront();
 	float getFovY();
 	void translate(MoveDirection dir, float deltaTime);
 	void rotate(float offsetX, float offsetY, bool constrainPitch = true);

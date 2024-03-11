@@ -23,6 +23,11 @@ glm::vec3 Camera::getCamPos()
 	return camPos_;
 }
 
+glm::vec3 Camera::getCamFront()
+{
+	return camFront_;
+}
+
 float Camera::getFovY()
 {
 	return fovY_;
